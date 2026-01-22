@@ -26,35 +26,33 @@ pipeline {
             steps {
                 sh '''
                 docker compose down || true
-                docker rm -f postgres-db flask-web || true
                 '''
             }
-        } 
-        
-        stage('Health Check') {
-            steps {
-                sh '''
-                echo "Waiting for app to become healthy..."
-                sleep 15
-                
-                STATUS=$(docker inspect --format='{{.State.Health.Status}}' flask-web)
-                
-                if [ "$STATUS" != "healthy" ]; then
-                  echo "❌ Application is unhealthy"
-                  docker ps
-                  exit 1
-                fi
-                
-                echo "✅ Application is healthy"
-                '''
-    }
-}
-
+        }
 
         stage('Start Application') {
             steps {
                 sh '''
                 docker compose up -d
+                '''
+            }
+        }
+
+        stage('Health Check') {
+            steps {
+                sh '''
+                echo "Waiting for app to become healthy..."
+                sleep 15
+
+                STATUS=$(docker inspect --format='{{.State.Health.Status}}' $CONTAINER_NAME 2>/dev/null || echo "not_found")
+
+                if [ "$STATUS" != "healthy" ]; then
+                  echo "❌ Application is unhealthy or container not found"
+                  docker ps -a
+                  exit 1
+                fi
+
+                echo "✅ Application is healthy"
                 '''
             }
         }
@@ -67,20 +65,19 @@ pipeline {
             }
         }
     }
- 
-    post {
-    failure {
-        echo "❌ Deployment failed. Rolling back..."
-        sh '''
-        docker compose down || true
-        docker compose up -d
-        '''
-    }
 
-    success {
-        echo "✅ Deployment completed successfully"
+    post {
+        failure {
+            echo "❌ Deployment failed. Rolling back..."
+            sh '''
+            docker compose down || true
+            docker compose up -d
+            '''
+        }
+
+        success {
+            echo "✅ Deployment completed successfully"
+        }
     }
-}
- 
 }
 
