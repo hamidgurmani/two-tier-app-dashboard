@@ -39,38 +39,26 @@ pipeline {
         }
 
         stage('Health Check') {
-            steps {
-                sh '''
-                echo "🔍 Waiting for Flask app to become healthy..."
+    steps {
+        sh '''
+        echo "🔍 Checking application health endpoint..."
 
-                MAX_ATTEMPTS=12
-                SLEEP_TIME=5
+        for i in {1..12}; do
+            if curl -sf http://localhost:5000/health > /dev/null; then
+                echo "✅ Application is healthy"
+                exit 0
+            fi
+            echo "Waiting for app..."
+            sleep 5
+        done
 
-                for i in $(seq 1 $MAX_ATTEMPTS); do
-                    STATUS=$(docker inspect --format='{{.State.Health.Status}}' ${CONTAINER_NAME} 2>/dev/null || echo "not_found")
-                    echo "Attempt $i/$MAX_ATTEMPTS → status: $STATUS"
+        echo "❌ Application failed health check"
+        docker logs flask-web
+        exit 1
+        '''
+    }
+}
 
-                    if [ "$STATUS" = "healthy" ]; then
-                        echo "✅ Application is healthy"
-                        exit 0
-                    fi
-
-                    if [ "$STATUS" = "unhealthy" ]; then
-                        echo "❌ Application reported unhealthy"
-                        docker logs ${CONTAINER_NAME}
-                        exit 1
-                    fi
-
-                    sleep $SLEEP_TIME
-                done
-
-                echo "❌ Timed out waiting for application to become healthy"
-                docker ps -a
-                docker logs ${CONTAINER_NAME} || true
-                exit 1
-                '''
-            }
-        }
 
         stage('Verify Containers') {
             steps {

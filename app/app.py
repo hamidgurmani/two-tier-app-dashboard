@@ -15,7 +15,7 @@ def get_db_connection():
 # ✅ HEALTHCHECK ENDPOINT (NO DATABASE)
 @app.route("/health")
 def health():
-    return "OK", 200
+    return {"status":"OK"}, 200
 
 @app.route("/", methods=["GET", "POST"])
 def index():
