@@ -26,6 +26,7 @@ pipeline {
             steps {
                 sh '''
                 docker compose down || true
+                docker rm -f postgres-db flask-web || true
                 '''
             }
         }
