@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d usersdb"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -20,7 +20,7 @@ services:
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   web:
-    image: flask-app
+    build: .
     container_name: flask-web
     ports:
       - "5000:5000"
@@ -31,12 +31,7 @@ services:
       DB_HOST: db
       DB_NAME: usersdb
       DB_USER: postgres
-      DB_PASSWORD: postgres
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5    
+      DB_PASSWORD: postgres    
 
 volumes:
   pgdata:
