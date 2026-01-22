@@ -12,6 +12,11 @@ def get_db_connection():
         password=os.getenv("DB_PASSWORD"),
     )
 
+# ✅ HEALTHCHECK ENDPOINT (NO DATABASE)
+@app.route("/health")
+def health():
+    return "OK", 200
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
@@ -24,7 +29,7 @@ def index():
         cur.close()
         conn.close()
 
-        return redirect("/")  # PRG pattern
+        return redirect("/")
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -36,5 +41,5 @@ def index():
     return render_template("index.html", users=users)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0")
+    app.run(host="0.0.0.0", port=5000)
 
