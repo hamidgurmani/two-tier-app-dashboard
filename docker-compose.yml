@@ -8,6 +8,11 @@ services:
       POSTGRES_DB: usersdb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     ports:
       - "5432:5432"
     volumes:
@@ -25,7 +30,7 @@ services:
       DB_HOST: db
       DB_NAME: usersdb
       DB_USER: postgres
-      DB_PASSWORD: postgres
+      DB_PASSWORD: postgres        
 
 volumes:
   pgdata:

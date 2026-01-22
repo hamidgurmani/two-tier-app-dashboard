@@ -16,6 +16,10 @@ COPY app/ .
 # 6. Expose Flask port
 EXPOSE 5000
 
-# 7. Run the Flask app
+# 7. 🔍 Health check: app must respond on /
+HEALTHCHECK --interval=10s --timeout=3s --retries=5 \
+  CMD curl -f http://localhost:5000/ || exit 1
+
+# 8. Run the Flask app
 CMD ["python", "app.py"]
 
