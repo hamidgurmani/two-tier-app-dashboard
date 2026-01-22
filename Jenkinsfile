@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "flask-app"
+        IMAGE_NAME     = "flask-app"
         CONTAINER_NAME = "flask-web"
     }
 
@@ -17,7 +17,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                docker build -t $IMAGE_NAME .
+                docker build -t ${IMAGE_NAME} .
                 '''
             }
         }
@@ -41,18 +41,33 @@ pipeline {
         stage('Health Check') {
             steps {
                 sh '''
-                echo "Waiting for app to become healthy..."
-                sleep 15
+                echo "🔍 Waiting for Flask app to become healthy..."
 
-                STATUS=$(docker inspect --format='{{.State.Health.Status}}' $CONTAINER_NAME 2>/dev/null || echo "not_found")
+                MAX_ATTEMPTS=12
+                SLEEP_TIME=5
 
-                if [ "$STATUS" != "healthy" ]; then
-                  echo "❌ Application is unhealthy or container not found"
-                  docker ps -a
-                  exit 1
-                fi
+                for i in $(seq 1 $MAX_ATTEMPTS); do
+                    STATUS=$(docker inspect --format='{{.State.Health.Status}}' ${CONTAINER_NAME} 2>/dev/null || echo "not_found")
+                    echo "Attempt $i/$MAX_ATTEMPTS → status: $STATUS"
 
-                echo "✅ Application is healthy"
+                    if [ "$STATUS" = "healthy" ]; then
+                        echo "✅ Application is healthy"
+                        exit 0
+                    fi
+
+                    if [ "$STATUS" = "unhealthy" ]; then
+                        echo "❌ Application reported unhealthy"
+                        docker logs ${CONTAINER_NAME}
+                        exit 1
+                    fi
+
+                    sleep $SLEEP_TIME
+                done
+
+                echo "❌ Timed out waiting for application to become healthy"
+                docker ps -a
+                docker logs ${CONTAINER_NAME} || true
+                exit 1
                 '''
             }
         }
@@ -60,6 +75,7 @@ pipeline {
         stage('Verify Containers') {
             steps {
                 sh '''
+                echo "📦 Running containers:"
                 docker ps
                 '''
             }
@@ -67,6 +83,7 @@ pipeline {
     }
 
     post {
+
         failure {
             echo "❌ Deployment failed. Rolling back..."
             sh '''

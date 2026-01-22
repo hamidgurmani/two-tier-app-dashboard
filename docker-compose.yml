@@ -25,12 +25,18 @@ services:
     ports:
       - "5000:5000"
     depends_on:
-      - db
+      db: 
+        condition: service_healthy
     environment:
       DB_HOST: db
       DB_NAME: usersdb
       DB_USER: postgres
-      DB_PASSWORD: postgres        
+      DB_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5    
 
 volumes:
   pgdata:
